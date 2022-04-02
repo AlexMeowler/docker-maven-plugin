@@ -17,6 +17,9 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private Boolean enableCliOutput;
 
+    @Parameter(defaultValue = "true")
+    private Boolean failOnError;
+
     @Parameter(required = true)
     private String containerName;
 
@@ -51,6 +54,7 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
         tryStopAndRemoveContainer();
         tryUpdateImage();
         tryRunContainer();
+        getLog().info("Container run successful");
     }
 
     private Integer fetchExternalPort() {
@@ -64,7 +68,7 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
             ProcessBuilder stopContainerProcess = buildProcessWithCommands(stopContainer);
             stopContainerProcess.start().waitFor();
         } catch (Exception e) {
-            throw new MojoExecutionException(e);
+            failOrLog(e);
         }
 
         try {
@@ -72,7 +76,7 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
             ProcessBuilder stopContainerProcess = buildProcessWithCommands(deleteContainer);
             stopContainerProcess.start().waitFor();
         } catch (Exception e) {
-            throw new MojoExecutionException(e);
+            failOrLog(e);
         }
     }
 
@@ -83,7 +87,7 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
             ProcessBuilder stopContainerProcess = buildProcessWithCommands(deleteImage);
             stopContainerProcess.start().waitFor();
         } catch (Exception e) {
-            throw new MojoExecutionException(e);
+            failOrLog(e);
         }
 
         try {
@@ -98,7 +102,7 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
             ProcessBuilder stopContainerProcess = buildProcessWithCommands(updateImage);
             stopContainerProcess.start().waitFor();
         } catch (Exception e) {
-            throw new MojoExecutionException(e);
+            failOrLog(e);
         }
     }
 
@@ -119,7 +123,7 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
             ProcessBuilder stopContainerProcess = buildProcessWithCommands(startContainer);
             stopContainerProcess.start().waitFor();
         } catch (Exception e) {
-            throw new MojoExecutionException(e);
+            failOrLog(e);
         }
     }
 
@@ -132,5 +136,12 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
             pb.inheritIO();
         }
         return pb;
+    }
+
+    private void failOrLog(Throwable throwable) throws MojoExecutionException {
+        if(failOnError) {
+            throw new MojoExecutionException(throwable);
+        }
+        getLog().error(throwable);
     }
 }
