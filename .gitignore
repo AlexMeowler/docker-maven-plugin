@@ -1,3 +1,2 @@
-target/**
-!target/site/
+target/*
 .idea/

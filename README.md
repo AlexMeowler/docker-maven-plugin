@@ -1,14 +1,15 @@
 
 ## Docker Maven Plugin
 
+![example workflow](https://github.com/AlexMeowler/docker-maven-plugin/actions/workflows/maven.yml/badge.svg)  
 A simple Maven plugin to automatically rebuild image and/or run it in container after building project executable file.
-
+    
 ## Prerequisites
 
 - Maven 3.8.3 or higher 
 - Java 11 or higher
 
-##Usage
+## Usage
 
 Just copy this into your project POM. `containerName` and `imageName` are mandatory parameters!
 
@@ -30,3 +31,7 @@ Just copy this into your project POM. `containerName` and `imageName` are mandat
         </executions>
     </plugin>
 ```
+
+## Documentation
+
+To be added
