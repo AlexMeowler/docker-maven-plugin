@@ -3,7 +3,6 @@ package org.retal.docker_plugin;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.retal.docker_plugin.exception.ExceptionUtil;
@@ -14,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@Mojo(name = "docker-update-container", defaultPhase = LifecyclePhase.PACKAGE)
+@Mojo(name = "docker-update-container")
 public class DockerUpdateContainerMojo extends AbstractMojo {
 
     @Parameter(defaultValue = "false")
@@ -40,6 +39,9 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
 
     @Parameter
     private Integer internalPort;
+
+    @Parameter(defaultValue = ".")
+    private String dockerfileDirectory;
 
     private ExceptionUtil exceptionUtil;
 
@@ -121,7 +123,7 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
             for(String s : additionalImageBuildParams) {
                 stringBuilder.append(s + " ");
             }
-            stringBuilder.append(".");
+            stringBuilder.append(dockerfileDirectory);
             updateImage = stringBuilder.toString();
             ProcessBuilder stopContainerProcess = buildProcessWithCommands(updateImage);
             stopContainerProcess.start().waitFor();
@@ -160,5 +162,9 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
             pb.inheritIO();
         }
         return pb;
+    }
+
+    public Integer getExternalPort() {
+        return externalPort;
     }
 }

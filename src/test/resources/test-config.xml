@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <containerName>test</containerName>
+    <imageName>springboot</imageName>
+    <internalPort>8080</internalPort>
+    <externalPort>80</externalPort>
+    <enableCliOutput>true</enableCliOutput>
+</configuration>
