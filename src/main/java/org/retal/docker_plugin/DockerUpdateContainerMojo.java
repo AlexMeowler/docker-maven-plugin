@@ -154,7 +154,10 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
     }
 
     private ProcessBuilder buildProcessWithCommands(String... commands) {
-        List<String> commandsList = new ArrayList<>(Arrays.asList("cmd.exe", "/c"));
+        String[] cmds = System.getProperty("os.name").startsWith("Windows") ?
+                new String[]{"cmd.exe", "/c"} : new String[]{"/bin/bash", "-c"};
+
+        List<String> commandsList = new ArrayList<>(Arrays.asList(cmds));
         commandsList.addAll(Arrays.asList(commands));
         ProcessBuilder pb = new ProcessBuilder(commandsList.toArray(new String[0]))
                 .redirectErrorStream(true);
