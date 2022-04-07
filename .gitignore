@@ -1,4 +1,4 @@
 target/*
 src/test/resources/*-default-values.xml
-docker-maven-plugin.iml
+/docker-maven-plugin.iml
 .idea/
