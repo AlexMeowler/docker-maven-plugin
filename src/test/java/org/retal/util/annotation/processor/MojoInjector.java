@@ -26,8 +26,8 @@ public class MojoInjector implements TestInstancePostProcessor {
         for(Field testField : testInstance.getClass().getDeclaredFields()) {
             InjectMojo injectMojo = testField.getAnnotation(InjectMojo.class);
             if(injectMojo != null) {
-                List<Node> elements = parseXml(injectMojo.value());
-                elements.addAll(parseXml(String.format(ParameterProcessor.FILE_NAME_PATTERN, testField.getType().getSimpleName())));
+                List<Node> elements = parseXml(String.format(ParameterProcessor.FILE_NAME_PATTERN, testField.getType().getSimpleName()));
+                elements.addAll(parseXml(injectMojo.value()));
                 Object mojo = testField.getType().getConstructor().newInstance();
 
                 testField.setAccessible(true);

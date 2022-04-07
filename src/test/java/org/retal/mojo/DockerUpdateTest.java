@@ -18,7 +18,7 @@ public class DockerUpdateTest {
     private DockerUpdateContainerMojo mojo;
 
     @Test
-    public void test() throws MojoExecutionException, MojoFailureException {
+    public void executeDefaultConfig() throws MojoExecutionException, MojoFailureException {
         Assertions.assertEquals(80, mojo.getExternalPort());
         mojo.execute();
     }
