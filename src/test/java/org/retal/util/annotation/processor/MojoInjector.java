@@ -21,6 +21,7 @@ import java.util.List;
 
 public class MojoInjector implements TestInstancePostProcessor {
 
+    //TODO check for required params
     @Override
     public void postProcessTestInstance(Object testInstance, ExtensionContext context) throws Exception {
         for(Field testField : testInstance.getClass().getDeclaredFields()) {
@@ -87,7 +88,7 @@ public class MojoInjector implements TestInstancePostProcessor {
                 injection = value;
                 break;
             default:
-                throw new UnsupportedOperationException("Parsing POJOs not implemented");
+                throw new UnsupportedOperationException("Parsing POJOs and arrays not implemented");
         }
         target.set(targetOwner, injection);
     }

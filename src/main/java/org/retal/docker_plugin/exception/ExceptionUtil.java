@@ -3,6 +3,8 @@ package org.retal.docker_plugin.exception;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.logging.Log;
 
+import java.util.Objects;
+
 public class ExceptionUtil {
 
     private final boolean failOnError;
@@ -29,6 +31,12 @@ public class ExceptionUtil {
                     new MojoExecutionException(text, throwable);
             throw mojoExecutionException;
         }
-        log.error(throwable);
+        if(Objects.nonNull(throwable) && Objects.nonNull(text)) {
+            log.error(text, throwable);
+        } else if (Objects.nonNull(throwable)) {
+            log.error(throwable);
+        } else if (Objects.nonNull(text)) {
+            log.error(text);
+        }
     }
 }

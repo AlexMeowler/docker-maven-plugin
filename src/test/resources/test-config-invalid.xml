@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <containerName>test</containerName>
-    <imageName>springboot</imageName>
+    <containerName>X</containerName>
+    <imageName>Y</imageName>
     <internalPort>8080</internalPort>
     <externalPort>25000</externalPort>
     <enableCliOutput>true</enableCliOutput>
+    <failOnError>true</failOnError>
 </configuration>

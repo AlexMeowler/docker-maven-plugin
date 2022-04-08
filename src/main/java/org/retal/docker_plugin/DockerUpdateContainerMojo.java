@@ -9,9 +9,11 @@ import org.retal.docker_plugin.exception.ExceptionUtil;
 import org.retal.docker_plugin.logging.AsyncOutputRedirector;
 import org.retal.docker_plugin.validation.ExtraParamsValidator;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.util.*;
 
 @Mojo(name = "docker-update-container")
 public class DockerUpdateContainerMojo extends AbstractMojo {
@@ -19,7 +21,7 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
     @Parameter(defaultValue = "false")
     private Boolean enableCliOutput;
 
-    @Parameter(defaultValue = "true")
+    @Parameter(defaultValue = "false")
     private Boolean failOnError;
 
     @Parameter(required = true)
@@ -74,12 +76,13 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
         getLog().info("Container run successful");
     }
 
+    //TODO fetching ports from existing containers
     private Integer fetchExternalPort() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     private Integer fetchInternalPort() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     private void tryStopAndRemoveContainer() throws MojoExecutionException {
@@ -87,20 +90,17 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
         try {
             String stopContainer = String.format("docker stop %s", containerName);
             getLog().info(stopContainer);
-            ProcessBuilder stopContainerProcessBuilder = buildProcessWithCommands(stopContainer);
-            Process stopContainerProcess = stopContainerProcessBuilder.start();
-            AsyncOutputRedirector asyncOutputRedirector = new AsyncOutputRedirector(getLog(), stopContainerProcess.getInputStream());
-            asyncOutputRedirector.start();
-            stopContainerProcess.waitFor();
-            asyncOutputRedirector.interrupt();
+            ProcessBuilder stopContainerProcess = buildDockerProcessWithCommands(stopContainer);
+            runProcess(stopContainerProcess);
         } catch (Exception e) {
             exceptionUtil.failOrLog(e);
         }
 
         try {
-            String deleteContainer = String.format("docker rm %s", containerName);
-            ProcessBuilder stopContainerProcess = buildProcessWithCommands(deleteContainer);
-            stopContainerProcess.start().waitFor();
+            String removeContainer = String.format("docker rm %s", containerName);
+            getLog().info(removeContainer);
+            ProcessBuilder removeContainerProcess = buildDockerProcessWithCommands(removeContainer);
+            runProcess(removeContainerProcess);
         } catch (Exception e) {
             exceptionUtil.failOrLog(e);
         }
@@ -110,23 +110,19 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
         getLog().info("Updating image...");
         try {
             String deleteImage = String.format("docker image rm %s", imageName);
-            ProcessBuilder stopContainerProcess = buildProcessWithCommands(deleteImage);
-            stopContainerProcess.start().waitFor();
+            getLog().info(deleteImage);
+            ProcessBuilder deleteImageProcess = buildDockerProcessWithCommands(deleteImage);
+            runProcess(deleteImageProcess);
         } catch (Exception e) {
             exceptionUtil.failOrLog(e);
         }
 
         try {
-            String updateImage = String.format("docker build -t %s ", imageName);
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append(updateImage);
-            for(String s : additionalImageBuildParams) {
-                stringBuilder.append(s + " ");
-            }
-            stringBuilder.append(dockerfileDirectory);
-            updateImage = stringBuilder.toString();
-            ProcessBuilder stopContainerProcess = buildProcessWithCommands(updateImage);
-            stopContainerProcess.start().waitFor();
+            String buildImage = String.format("docker build -t %s ", imageName);
+            buildImage = attachAdditionalCommands(buildImage, additionalImageBuildParams, dockerfileDirectory);
+            getLog().info(buildImage);
+            ProcessBuilder buildImageProcess = buildDockerProcessWithCommands(buildImage);
+            runProcess(buildImageProcess);
         } catch (Exception e) {
             exceptionUtil.failOrLog(e);
         }
@@ -139,35 +135,62 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
                     String.format("-p %d:%d", externalPort, internalPort);
             String startContainer = String.format("docker run -d %s --name %s ",
                     ports, containerName);
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.append(startContainer);
-            for(String s : additionalContainerRunParams) {
-                stringBuilder.append(s + " ");
-            }
-            stringBuilder.append(imageName);
-            startContainer = stringBuilder.toString();
-            ProcessBuilder stopContainerProcess = buildProcessWithCommands(startContainer);
-            stopContainerProcess.start().waitFor();
+            startContainer = attachAdditionalCommands(startContainer, additionalContainerRunParams, imageName);
+            getLog().info(startContainer);
+            ProcessBuilder startContainerProcess = buildDockerProcessWithCommands(startContainer);
+            runProcess(startContainerProcess);
         } catch (Exception e) {
             exceptionUtil.failOrLog(e);
         }
     }
 
-    private ProcessBuilder buildProcessWithCommands(String... commands) {
+    private ProcessBuilder buildDockerProcessWithCommands(String... commands) throws URISyntaxException {
         String[] cmds = System.getProperty("os.name").startsWith("Windows") ?
                 new String[]{"cmd.exe", "/c"} : new String[]{"/bin/bash", "-c"};
 
         List<String> commandsList = new ArrayList<>(Arrays.asList(cmds));
         commandsList.addAll(Arrays.asList(commands));
+        File dockerfile = new File(getClass().getClassLoader().getResource("Dockerfile").toURI());
         ProcessBuilder pb = new ProcessBuilder(commandsList.toArray(new String[0]))
-                .redirectErrorStream(true);
-        if(enableCliOutput) {
-            pb.inheritIO();
-        }
+                .directory(dockerfile.getParentFile());
+        pb.environment().put("DOCKER_BUILDKIT", "0");
         return pb;
     }
 
-    public Integer getExternalPort() {
-        return externalPort;
+    private void runProcess(ProcessBuilder processBuilder) throws InterruptedException, IOException, MojoExecutionException {
+        Process process = processBuilder.start();
+        InputStream inputStream = InputStream.nullInputStream();
+        InputStream errorStream = InputStream.nullInputStream();
+        if(enableCliOutput) {
+            inputStream = process.getInputStream();
+            errorStream  = process.getErrorStream();
+        }
+        boolean[] hasErrors = {false};
+        Throwable[] throwable = {null};
+        AsyncOutputRedirector asyncOutputRedirector = new AsyncOutputRedirector(getLog(), inputStream, errorStream, exceptionUtil);
+        asyncOutputRedirector.setUncaughtExceptionHandler((thread, exception) -> {
+            hasErrors[0] = true;
+            throwable[0] = exception;
+        });
+        asyncOutputRedirector.start();
+        process.waitFor();
+        asyncOutputRedirector.interrupt();
+        if(hasErrors[0]) {
+            throw new MojoExecutionException(throwable[0].getCause());
+        }
     }
+
+    private String attachAdditionalCommands(String startCommand, String[] cmds, String appendix) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(startCommand);
+        for(String s : cmds) {
+            stringBuilder.append(s + " ");
+        }
+        if(Objects.isNull(appendix)) {
+            appendix = "";
+        }
+        stringBuilder.append(appendix);
+        return stringBuilder.toString();
+    }
+
 }
