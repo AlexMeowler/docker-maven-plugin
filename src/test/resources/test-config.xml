@@ -5,4 +5,9 @@
     <internalPort>8080</internalPort>
     <externalPort>25000</externalPort>
     <enableCliOutput>true</enableCliOutput>
+    <dockerfileDirectory>src/test/resources</dockerfileDirectory>
+    <additionalContainerRunParams>
+        <param>-e MY_PARAM=1</param>
+        <param>--ip 192.168.1.100</param>
+    </additionalContainerRunParams>
 </configuration>

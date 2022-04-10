@@ -150,9 +150,8 @@ public class DockerUpdateContainerMojo extends AbstractMojo {
 
         List<String> commandsList = new ArrayList<>(Arrays.asList(cmds));
         commandsList.addAll(Arrays.asList(commands));
-        File dockerfile = new File(getClass().getClassLoader().getResource("Dockerfile").toURI());
         ProcessBuilder pb = new ProcessBuilder(commandsList.toArray(new String[0]))
-                .directory(dockerfile.getParentFile());
+                .directory(new File(System.getProperty("user.dir")));
         pb.environment().put("DOCKER_BUILDKIT", "0");
         return pb;
     }

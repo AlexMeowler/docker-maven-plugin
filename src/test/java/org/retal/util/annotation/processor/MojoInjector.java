@@ -13,11 +13,13 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MojoInjector implements TestInstancePostProcessor {
 
@@ -37,13 +39,12 @@ public class MojoInjector implements TestInstancePostProcessor {
 
                 for(Node paramToInject : elements) {
                     String name = paramToInject.getNodeName();
-                    String value = paramToInject.getTextContent();
                     Field target = parameters.stream()
                             .filter(f -> f.getName().equals(name))
                             .findFirst()
                             .orElseThrow(() -> new FieldNotDeclaredException(mojo.getClass(), name));
 
-                    injectValue(mojo, target, value);
+                    injectValue(mojo, target, paramToInject);
                 }
             }
         }
@@ -62,17 +63,49 @@ public class MojoInjector implements TestInstancePostProcessor {
             Node node = content.item(i);
             if(node.getNodeType() == Node.ELEMENT_NODE) {
                 elements.add(node);
+                filterChildren(node);
             }
         }
 
         return elements;
     }
 
-    private void injectValue(Object targetOwner, Field target, Object value) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    private void filterChildren(Node node) {
+        List<Node> childrenToRemove = new ArrayList<>();
+        NodeList children = node.getChildNodes();
+        for(int i = 0; i < children.getLength(); i++) {
+            Node child = children.item(i);
+            if(child.getNodeType() == Node.ELEMENT_NODE || !child.getTextContent().matches("^\\s*$")) {
+                filterChildren(child);
+            } else {
+                childrenToRemove.add(child);
+            }
+        }
+        childrenToRemove.forEach(node::removeChild);
+    }
+
+    private void injectValue(Object targetOwner, Field target, Node node) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         //TODO POJO injection
         target.setAccessible(true);
-        Object injection;
-        ClassEnum classEnum = ClassEnum.valueOf(target.getType().getSimpleName().toUpperCase());
+        String type = target.getType().getSimpleName().toUpperCase();
+        boolean isArray = type.endsWith("[]");
+        ClassEnum classEnum = isArray ? ClassEnum.ARRAY : ClassEnum.fromValue(type);
+        Object injection = parseValue(classEnum, target, nodeToListWithChildren(node));
+        target.set(targetOwner, injection);
+    }
+
+    private Node[] nodeToListWithChildren(Node node) {
+        List<Node> nodes = new ArrayList<>();
+        nodes.add(node);
+        NodeList nodeList = node.getChildNodes();
+        for(int i = 0; i< nodeList.getLength(); i++) {
+            nodes.add(nodeList.item(i));
+        }
+        return nodes.toArray(new Node[0]);
+    }
+
+    private Object parseValue(ClassEnum classEnum, Field target, Node[] nodes) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        Object value;
         switch (classEnum) {
             case BYTE:
             case LONG:
@@ -82,15 +115,27 @@ public class MojoInjector implements TestInstancePostProcessor {
             case BOOLEAN:
             case INTEGER:
             case CHARACTER:
-                injection = target.getType().getMethod("valueOf", String.class).invoke(null, value);
+                value = target.getType().getMethod("valueOf", String.class).invoke(null, nodes[0].getTextContent());
                 break;
             case STRING:
-                injection = value;
+                value = nodes[0].getTextContent();
+                break;
+            case ARRAY:
+                List<Node> nodeList = Arrays.stream(nodes).collect(Collectors.toList());
+                nodeList.remove(0);
+                Class type = target.getType().getComponentType();
+                Object array = Array.newInstance(type, nodeList.size());
+                for(int i = 0; i < nodeList.size(); i++) {
+                    boolean isArray = type.getSimpleName().endsWith("[]");
+                    ClassEnum clazz = isArray ? ClassEnum.ARRAY : ClassEnum.fromValue(type.getSimpleName());
+                    Array.set(array, i, parseValue(clazz, target, nodeToListWithChildren(nodeList.get(i))));
+                }
+                value = array;
                 break;
             default:
-                throw new UnsupportedOperationException("Parsing POJOs and arrays not implemented");
+                throw new UnsupportedOperationException("Parsing POJOs is not implemented");
         }
-        target.set(targetOwner, injection);
+        return value;
     }
 
     private enum ClassEnum {
@@ -102,6 +147,16 @@ public class MojoInjector implements TestInstancePostProcessor {
         DOUBLE,
         BOOLEAN,
         CHARACTER,
-        STRING
+        STRING,
+        ARRAY,
+        UNKNOWN_CLASS;
+
+        public static ClassEnum fromValue(String value) {
+            try {
+                return ClassEnum.valueOf(value.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return UNKNOWN_CLASS;
+            }
+        }
     }
 }

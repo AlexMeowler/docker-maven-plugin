@@ -22,6 +22,7 @@ import java.util.List;
 @ExtendWith(MojoInjector.class)
 public class DockerUpdateTest {
 
+    //todo make wrapper with mojo & extra params
     @InjectMojo("test-config.xml")
     private DockerUpdateContainerMojo mojo;
 
