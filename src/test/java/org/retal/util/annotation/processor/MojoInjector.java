@@ -84,8 +84,7 @@ public class MojoInjector implements TestInstancePostProcessor {
         childrenToRemove.forEach(node::removeChild);
     }
 
-    private void injectValue(Object targetOwner, Field target, Node node) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        //TODO POJO injection
+    private void injectValue(Object targetOwner, Field target, Node node) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
         target.setAccessible(true);
         String type = target.getType().getSimpleName().toUpperCase();
         boolean isArray = type.endsWith("[]");
@@ -104,7 +103,7 @@ public class MojoInjector implements TestInstancePostProcessor {
         return nodes.toArray(new Node[0]);
     }
 
-    private Object parseValue(ClassEnum classEnum, Field target, Node[] nodes) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    private Object parseValue(ClassEnum classEnum, Field target, Node[] nodes) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
         Object value;
         switch (classEnum) {
             case BYTE:
@@ -132,8 +131,21 @@ public class MojoInjector implements TestInstancePostProcessor {
                 }
                 value = array;
                 break;
+            case CUSTOM_CLASS:
+                nodeList = Arrays.stream(nodes).collect(Collectors.toList());
+                nodeList.remove(0);
+                Object pojo = target.getType().getConstructor().newInstance();
+                for(int i = 0; i < nodeList.size(); i++) {
+                    Node node = nodeList.get(i);
+                    Field field = Arrays.stream(pojo.getClass().getDeclaredFields())
+                            .filter(f -> f.getName().equals(node.getNodeName()))
+                            .findFirst().orElseThrow(() -> new FieldNotDeclaredException(pojo.getClass(), node.getNodeName()));
+                    injectValue(pojo, field, node);
+                }
+                value = pojo;
+                break;
             default:
-                throw new UnsupportedOperationException("Parsing POJOs is not implemented");
+                throw new UnsupportedOperationException("Something went wrong");
         }
         return value;
     }
@@ -149,13 +161,13 @@ public class MojoInjector implements TestInstancePostProcessor {
         CHARACTER,
         STRING,
         ARRAY,
-        UNKNOWN_CLASS;
+        CUSTOM_CLASS;
 
         public static ClassEnum fromValue(String value) {
             try {
                 return ClassEnum.valueOf(value.toUpperCase());
             } catch (IllegalArgumentException e) {
-                return UNKNOWN_CLASS;
+                return CUSTOM_CLASS;
             }
         }
     }

@@ -1,7 +1,6 @@
 package org.retal.mojo;
 
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,7 +47,7 @@ public class DockerUpdateTest {
     }
 
     @Test
-    public void invalidXmlFail() throws MojoExecutionException, MojoFailureException {
+    public void invalidXmlFail() {
         Assertions.assertThrows(MojoExecutionException.class, () -> invalidMojo.execute(), "Should fail on \"docker stop\"");
     }
 
