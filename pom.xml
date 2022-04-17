@@ -14,8 +14,16 @@
         <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <processorFullName>org.retal.docker_plugin.annotation.processor.ParameterProcessor</processorFullName>
+        <processorFullName>org.retal.plugin.test.annotation.processor.ParameterProcessor</processorFullName>
+        <plugin.testing.version>0.0.2</plugin.testing.version>
     </properties>
+
+    <repositories>
+        <repository>
+            <id>plugin-testing</id>
+            <url>https://raw.githubusercontent.com/AlexMeowler/plugin-testing/artifacts</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <dependency>
@@ -102,6 +110,12 @@
             <version>3.9.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.retal</groupId>
+            <artifactId>plugin-testing</artifactId>
+            <version>0.0.2</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -135,23 +149,13 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>compile-processor</id>
                         <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <includes>${processorFullName}</includes>
-                            <encoding>UTF-8</encoding>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>compile-src</id>
-                        <goals>
-                            <goal>compile</goal>
+                            <goal>testCompile</goal>
                         </goals>
                         <configuration>
                             <encoding>UTF-8</encoding>
-                            <generatedSourcesDirectory>${project.basedir}/src/test/resources</generatedSourcesDirectory>
+                            <testIncludes>org.retal.docker_plugin</testIncludes>
+                            <generatedTestSourcesDirectory>${project.basedir}/src/test/resources</generatedTestSourcesDirectory>
                             <annotationProcessors>
                                 <annotationProcessor>${processorFullName}</annotationProcessor>
                             </annotationProcessors>

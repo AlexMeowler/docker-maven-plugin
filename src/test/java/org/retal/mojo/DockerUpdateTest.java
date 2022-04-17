@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.retal.docker_plugin.DockerUpdateContainerMojo;
-import org.retal.util.annotation.InjectMojo;
-import org.retal.util.annotation.processor.MojoInjector;
+import org.retal.plugin.test.annotation.processor.MojoInjector;
+import org.retal.plugin.test.annotation.InjectMojo;
 
 import java.io.BufferedReader;
 import java.io.IOException;
