@@ -114,7 +114,6 @@
             <groupId>org.retal</groupId>
             <artifactId>plugin-testing</artifactId>
             <version>0.0.2</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -149,13 +148,14 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
+                        <id>generate-default-values</id>
                         <goals>
-                            <goal>testCompile</goal>
+                            <goal>compile</goal>
                         </goals>
+                        <phase>generate-resources</phase>
                         <configuration>
                             <encoding>UTF-8</encoding>
-                            <testIncludes>org.retal.docker_plugin</testIncludes>
-                            <generatedTestSourcesDirectory>${project.basedir}/src/test/resources</generatedTestSourcesDirectory>
+                            <generatedSourcesDirectory>${project.basedir}/src/test/resources</generatedSourcesDirectory>
                             <annotationProcessors>
                                 <annotationProcessor>${processorFullName}</annotationProcessor>
                             </annotationProcessors>
