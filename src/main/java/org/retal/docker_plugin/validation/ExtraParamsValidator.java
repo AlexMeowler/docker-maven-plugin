@@ -1,7 +1,7 @@
 package org.retal.docker_plugin.validation;
 
 import org.apache.maven.plugin.MojoExecutionException;
-import org.retal.docker_plugin.exception.ExceptionUtil;
+import org.retal.plugin.test.exception.ExceptionUtil;
 
 import java.util.Arrays;
 import java.util.List;

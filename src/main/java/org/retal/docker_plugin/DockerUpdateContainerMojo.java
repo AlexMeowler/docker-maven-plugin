@@ -5,9 +5,9 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.retal.docker_plugin.exception.ExceptionUtil;
-import org.retal.docker_plugin.logging.AsyncOutputRedirector;
 import org.retal.docker_plugin.validation.ExtraParamsValidator;
+import org.retal.plugin.test.exception.ExceptionUtil;
+import org.retal.plugin.test.logging.AsyncOutputRedirector;
 
 import java.io.File;
 import java.io.IOException;
